@@ -1,0 +1,15 @@
+﻿<Window x:Class="SMDocClient.SelServ"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SMDocClient"
+        mc:Ignorable="d"
+        Title="SelServ" Height="336.4" Width="218.2" Closing="TryClose" WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Button x:Name="sure" Content="确定" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="75" Margin="0,0,75,0.4" Click="Sure"/>
+        <Button x:Name="cancel" Content="取消" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="75" Margin="0,0,-0.4,0.4" Click="Cancel"/>
+        <ListBox x:Name="listBox" Margin="0,0,0,19.4"/>
+
+    </Grid>
+</Window>
