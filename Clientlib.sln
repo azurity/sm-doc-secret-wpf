@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Clientlib", "Clientlib\Clientlib.vcxproj", "{7C5B9077-2183-4A4D-B22A-22429CB5633A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SMDocClient", "SMDocClient\SMDocClient.csproj", "{7814F33F-D8B3-4851-99B1-3CB3B5D8EA37}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7C5B9077-2183-4A4D-B22A-22429CB5633A} = {7C5B9077-2183-4A4D-B22A-22429CB5633A}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
