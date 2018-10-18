@@ -87,14 +87,19 @@ namespace SMDocClient
 
         public class Conn
         {
+            private class Ptr
+            {
+                public IntPtr ptr;
+            }
+
             public delegate void KeyIvCallback(byte[] key, byte[] iv, byte[] hash);
-            private IntPtr conn = IntPtr.Zero;
+            private Ptr conn = new Ptr { ptr = IntPtr.Zero };
             private bool close = false;
             private Thread heartTh = null;
 
             public Conn(string addr)
             {
-                conn = CreateConn(addr);
+                conn.ptr = CreateConn(addr);
                 heartTh = new Thread(heart);
                 heartTh.Start();
             }
@@ -102,12 +107,12 @@ namespace SMDocClient
             ~Conn()
             {
                 close = true;
-                if (conn != IntPtr.Zero) CloseConn(conn);
+                if (conn.ptr != IntPtr.Zero) CloseConn(conn.ptr);
                 if (heartTh != null)
                 {
                     heartTh.Abort();
                 }
-                conn = IntPtr.Zero;
+                conn.ptr = IntPtr.Zero;
             }
 
             private void heart()
@@ -120,9 +125,12 @@ namespace SMDocClient
                     while (!close)
                     {
                         Thread.Sleep(20 * 1000);
-                        if(!SendPack(conn, heartBuf))
+                        lock (conn)
                         {
-                            break;
+                            if (!SendPack(conn.ptr, heartBuf))
+                            {
+                                break;
+                            }
                         }
                     }
                 }
@@ -135,13 +143,16 @@ namespace SMDocClient
             public void Close()
             {
                 close = true;
-                if (conn != IntPtr.Zero) CloseConn(conn);
-                conn = IntPtr.Zero;
+                lock (conn)
+                {
+                    if (conn.ptr != IntPtr.Zero) CloseConn(conn.ptr);
+                    conn.ptr = IntPtr.Zero;
+                }
             }
 
             public Thread ReqEnc(string info, byte[] hash, KeyIvCallback keyiv)
             {
-                if (conn == null) return null;
+                if (hash == null) return null;
                 byte[] buffer = new byte[256];
                 Array.Clear(buffer, 0, 256);
                 buffer[0] = 1;
@@ -149,29 +160,42 @@ namespace SMDocClient
                 Encoding.UTF8.GetBytes(info).CopyTo(buffer, 36);
                 Thread th = new Thread(() =>
                 {
-                    if(!SendPack(conn, buffer))
+                    try
+                    {
+                        lock (conn)
+                        {
+                            if (!SendPack(conn.ptr, buffer))
+                            {
+                                keyiv?.Invoke(null, null, null);
+                                return;
+                            }
+                        }
+                        lock (conn)
+                        {
+                            if (!RecvPack(conn.ptr, buffer))
+                            {
+                                keyiv?.Invoke(null, null, null);
+                                return;
+                            }
+                        }
+                        if (buffer[0] != 3)
+                        {
+                            keyiv?.Invoke(null, null, null);
+                            return;
+                        }
+                        //success
+                        byte[] key = new byte[16];
+                        byte[] iv = new byte[16];
+                        byte[] cbhash = new byte[32];
+                        Array.Copy(buffer, 4, key, 0, 16);
+                        Array.Copy(buffer, 20, iv, 0, 16);
+                        Array.Copy(buffer, 36, cbhash, 0, 32);
+                        keyiv?.Invoke(key, iv, cbhash);
+                    }
+                    catch (Exception)
                     {
                         keyiv?.Invoke(null, null, null);
-                        return;
                     }
-                    if(!RecvPack(conn, buffer))
-                    {
-                        keyiv?.Invoke(null, null, null);
-                        return;
-                    }
-                    if (buffer[0] != 3)
-                    {
-                        keyiv?.Invoke(null, null, null);
-                        return;
-                    }
-                    //success
-                    byte[] key = new byte[16];
-                    byte[] iv = new byte[16];
-                    byte[] cbhash = new byte[32];
-                    Array.Copy(buffer, 4, key, 0, 16);
-                    Array.Copy(buffer, 20, iv, 0, 16);
-                    Array.Copy(buffer, 36, cbhash, 0, 32);
-                    keyiv?.Invoke(key, iv, cbhash);
                 });
                 th.Start();
                 return th;
@@ -179,7 +203,7 @@ namespace SMDocClient
 
             public Thread ReqDec(string info, byte[] hash, KeyIvCallback keyiv)
             {
-                if (conn == null) return null;
+                if (hash == null) return null;
                 byte[] buffer = new byte[256];
                 Array.Clear(buffer, 0, 256);
                 buffer[0] = 2;
@@ -187,29 +211,42 @@ namespace SMDocClient
                 Encoding.UTF8.GetBytes(info).CopyTo(buffer, 36);
                 Thread th = new Thread(() =>
                 {
-                    if(!SendPack(conn, buffer))
+                    try
                     {
-                        keyiv?.Invoke(null, null, null);
-                        return;
+                        lock (conn)
+                        {
+                            if (!SendPack(conn.ptr, buffer))
+                            {
+                                keyiv?.Invoke(null, null, null);
+                                return;
+                            }
+                        }
+                        lock (conn)
+                        {
+                            if (!RecvPack(conn.ptr, buffer))
+                            {
+                                keyiv?.Invoke(null, null, null);
+                                return;
+                            }
+                        }
+                        if (buffer[0] != 3)
+                        {
+                            keyiv?.Invoke(null, null, null);
+                            return;
+                        }
+                        //success
+                        byte[] key = new byte[16];
+                        byte[] iv = new byte[16];
+                        byte[] cbhash = new byte[32];
+                        Array.Copy(buffer, 4, key, 0, 16);
+                        Array.Copy(buffer, 20, iv, 0, 16);
+                        Array.Copy(buffer, 36, cbhash, 0, 32);
+                        keyiv?.Invoke(key, iv, cbhash);
                     }
-                    if(!RecvPack(conn, buffer))
+                    catch (Exception)
                     {
-                        keyiv?.Invoke(null, null, null);
-                        return;
+                        keyiv.Invoke(null, null, null);
                     }
-                    if (buffer[0] != 3)
-                    {
-                        keyiv?.Invoke(null, null, null);
-                        return;
-                    }
-                    //success
-                    byte[] key = new byte[16];
-                    byte[] iv = new byte[16];
-                    byte[] cbhash = new byte[32];
-                    Array.Copy(buffer, 4, key, 0, 16);
-                    Array.Copy(buffer, 20, iv, 0, 16);
-                    Array.Copy(buffer, 36, cbhash, 0, 32);
-                    keyiv?.Invoke(key, iv, cbhash);
                 });
                 th.Start();
                 return th;
@@ -221,7 +258,17 @@ namespace SMDocClient
                 Array.Clear(buffer, 0, 256);
                 buffer[0] = 5;
                 hash.CopyTo(buffer, 4);
-                return SendPack(conn, buffer);
+                lock (conn)
+                {
+                    try
+                    {
+                        return SendPack(conn.ptr, buffer);
+                    }
+                    catch (Exception)
+                    {
+                        return false;
+                    }
+                }
             }
         }
     }

@@ -131,6 +131,7 @@ void CloseConn(void * conn) {
 
 extern "C" __declspec(dllexport)
 long SendPack(void * conn, uint8_t * buffer) {
+	if (conn == nullptr)return false;
 	ConnCTX*cconn = (ConnCTX*)conn;
 	int ret = SSL_write(cconn->ssl, buffer, PKTLEN);
 	return (ret > 0);
@@ -138,6 +139,7 @@ long SendPack(void * conn, uint8_t * buffer) {
 
 extern "C" __declspec(dllexport)
 long RecvPack(void * conn, uint8_t * buffer) {
+	if (conn == nullptr)return false;
 	ConnCTX*cconn = (ConnCTX*)conn;
 	int ret = SSL_read(cconn->ssl, buffer, PKTLEN);
 	return (ret > 0);
