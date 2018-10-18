@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="Signup" Height="66.3" Width="378.2" WindowStartupLocation="CenterScreen">
     <Grid>
-        <TextBox x:Name="textBox" Height="23" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Margin="64,0,80,0"/>
+        <TextBox x:Name="textBox" Height="23" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Margin="64,0,80,0" MaxLength="12"/>
         <Label x:Name="label" Content="识别名称: " HorizontalAlignment="Left" VerticalAlignment="Top" Height="23"/>
         <Button x:Name="button" Content="确定" VerticalAlignment="Top" Margin="292,0,5,0" Click="Sure" Height="23"/>
 

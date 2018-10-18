@@ -32,7 +32,7 @@ namespace SMDocClient
                 MessageBox.Show("识别名称不能为空");
                 return;
             }
-            name = textBox.Text;
+            name = textBox.Text.Substring(0, 12);
             DialogResult = true;
             Close();
         }
