@@ -64,7 +64,7 @@ namespace SMDocClient
                         }, Encoding.UTF8.GetString(socket.Receive(ref point)));
                     }
                 }
-                catch (ThreadAbortException e)
+                catch (ThreadAbortException)
                 {
                     return;
                 }

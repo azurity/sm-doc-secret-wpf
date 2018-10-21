@@ -39,14 +39,14 @@ namespace SMDocClient
             return th;
         }
 
-        public byte[] Enc(string inFilePath, string outFilePath, byte[] key, byte[] iv)
+        public static byte[] Enc(string inFilePath, string outFilePath, byte[] key, byte[] iv)
         {
             byte[] hash = new byte[32];
             encfile(inFilePath, outFilePath, key, iv, hash);
             return hash;
         }
 
-        public byte[] Dec(string inFilePath, string outFilePath, byte[] key, byte[] iv)
+        public static byte[] Dec(string inFilePath, string outFilePath, byte[] key, byte[] iv)
         {
             byte[] hash = new byte[32];
             decfile(inFilePath, outFilePath, key, iv, hash);

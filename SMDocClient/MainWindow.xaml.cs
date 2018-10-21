@@ -157,11 +157,12 @@ namespace SMDocClient
 
         private void Cancel(object sender, RoutedEventArgs e)
         {
+            statusBox.Text += "取消中……\n";
             tryCancel();
             statusBox.Text += "操作已取消\n";
         }
 
-        private void tryCancel()
+        private void tryCancel(bool dontAbort = false)
         {
             doCacnel = true;
             if (conn != null)
@@ -169,7 +170,7 @@ namespace SMDocClient
                 conn.Close();
                 conn = null;
             }
-            if (workTh != null)
+            if (workTh != null && !dontAbort)
             {
                 workTh.Abort();
                 workTh = null;
@@ -196,7 +197,7 @@ namespace SMDocClient
                     return;
                 }
                 statusBox.Text += "Hash计算完成\n等待手机同意……\n";
-                workTh = conn.ReqEnc(sign_name + "\n" + System.IO.Path.GetFileName(inputFile.Text), hash, EncKeyIvCallback);
+                workTh = conn.ReqEnc(sign_name + "\n" + System.IO.Path.GetFileName(inputFile.Text) + "\n", hash, EncKeyIvCallback);
             });
         }
 
@@ -213,13 +214,14 @@ namespace SMDocClient
                     return;
                 }
                 statusBox.Text += "Hash计算完成\n等待手机同意……\n";
-                workTh = conn.ReqDec(sign_name + "\n" + System.IO.Path.GetFileName(inputFile.Text), hash, DecKeyIvCallback);
+                workTh = conn.ReqDec(sign_name + "\n" + System.IO.Path.GetFileName(inputFile.Text) + "\n", hash, DecKeyIvCallback);
             });
         }
 
         private void EncKeyIvCallback(byte[] key, byte[] iv, byte[] hash)
         {
             if (doCacnel) return;
+            string intxt = "", outtxt = "";
             Dispatcher.Invoke(() =>
             {
                 if (doCacnel) return;
@@ -231,15 +233,18 @@ namespace SMDocClient
                 else
                 {
                     statusBox.Text += "开始加密……\n";
+                    intxt = inputFile.Text;
+                    outtxt = outputFile.Text;
                 }
             });
             if (key == null) return;
-            byte[] rethash = ctx.Enc(inputFile.Text, outputFile.Text, key, iv);
+            byte[] rethash = ClientLib.Enc(intxt, outtxt, key, iv);
             if (rethash == null)
             {
                 Dispatcher.Invoke(() =>
                 {
                     statusBox.Text += "加密失败\n";
+                    File.Delete(outputFile.Text);
                     tryCancel();
                 });
             }
@@ -250,6 +255,7 @@ namespace SMDocClient
                     Dispatcher.Invoke(() =>
                     {
                         statusBox.Text += "手机失去连接，加密失败\n";
+                        File.Delete(outputFile.Text);
                         tryCancel();
                     });
                 }
@@ -259,7 +265,7 @@ namespace SMDocClient
                     {
                         statusBox.Text += "加密完成\n";
                         statusBox.Text += inputFile.Text + " -> " + outputFile.Text + "\n";
-                        tryCancel();
+                        tryCancel(true);
                     });
                 }
             }
@@ -268,6 +274,7 @@ namespace SMDocClient
         private void DecKeyIvCallback(byte[] key, byte[] iv, byte[] hash)
         {
             if (doCacnel) return;
+            string intxt = "", outtxt = "";
             Dispatcher.Invoke(() =>
             {
                 if (doCacnel) return;
@@ -279,15 +286,18 @@ namespace SMDocClient
                 else
                 {
                     statusBox.Text += "开始解密……\n";
+                    intxt = inputFile.Text;
+                    outtxt = outputFile.Text;
                 }
             });
             if (key == null) return;
-            byte[] rethash = ctx.Dec(inputFile.Text, outputFile.Text, key, iv);
+            byte[] rethash = ClientLib.Dec(intxt, outtxt, key, iv);
             if (rethash == null)
             {
                 Dispatcher.Invoke(() =>
                 {
                     statusBox.Text += "解密失败\n";
+                    File.Delete(outputFile.Text);
                     tryCancel();
                 });
             }
@@ -298,6 +308,7 @@ namespace SMDocClient
                     Dispatcher.Invoke(() =>
                     {
                         statusBox.Text += "校验错误，解密失败\n";
+                        File.Delete(outputFile.Text);
                         tryCancel();
                     });
                 }
@@ -307,7 +318,7 @@ namespace SMDocClient
                     {
                         statusBox.Text += "解密完成\n";
                         statusBox.Text += inputFile.Text + " -> " + outputFile.Text + "\n";
-                        tryCancel();
+                        tryCancel(true);
                     });
                 }
             }

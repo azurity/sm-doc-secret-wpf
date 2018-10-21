@@ -110,6 +110,8 @@ void* CreateConn(char * addr) {
 		err = ERR_error_string(ERR_get_error(), nullptr);
 		return conn;
 	}
+	DWORD timeout = 20 * 1000;
+	setsockopt(conn->socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
 	return conn;
 }
 
