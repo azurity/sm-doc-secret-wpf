@@ -12,6 +12,7 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/conf.h>
+//#include <fstream>
 using namespace std;
 
 #pragma comment( lib, "ws2_32.lib" )
@@ -77,6 +78,7 @@ void ReleaseEnv() {
 
 extern "C" __declspec(dllexport)
 void* CreateConn(char * addr) {
+	//ofstream ofs("F:/debug.log");
 	SOCKET sockfd;
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
@@ -102,6 +104,7 @@ void* CreateConn(char * addr) {
 		stringstream ss;
 		ss << WSAGetLastError();
 		ss >> err;
+		//ofs << err;
 		return conn;
 	}
 	conn->ssl = SSL_new(conn->ctx);
@@ -169,7 +172,7 @@ long fileHash(const char * filePath, uint8_t * hash) {
 	uint8_t data[256];
 	size_t len;
 	while (true) {
-		len = fread(data, 256, 1, f);
+		len = fread(data, 1, 256, f);
 		EVP_DigestUpdate(evpCtx, data, len);
 		if (len < 256) {
 			break;
@@ -223,9 +226,9 @@ long encfile(const char * inFilePath, const char * outFilePath, uint8_t * key, u
 	uint8_t dataOut[1024];
 	int inLen, outLen;
 	while (true) {
-		inLen = fread(dataIn, 256, 1, in);
+		inLen = fread(dataIn, 1, 256, in);
 		EVP_EncryptUpdate(ctx, dataOut, &outLen, dataIn, inLen);
-		fwrite(dataOut, outLen, 1, out);
+		fwrite(dataOut, 1, outLen, out);
 		EVP_DigestUpdate(evpCtx, dataOut, outLen);
 		if (inLen < 256) {
 			break;
@@ -233,6 +236,7 @@ long encfile(const char * inFilePath, const char * outFilePath, uint8_t * key, u
 	}
 	EVP_EncryptFinal_ex(ctx, dataOut, &outLen);
 	fwrite(dataOut, outLen, 1, out);
+	EVP_DigestUpdate(evpCtx, dataOut, outLen);
 	fclose(in);
 	fclose(out);
 	unsigned rlen;
@@ -287,9 +291,9 @@ long decfile(const char * inFilePath, const char * outFilePath, uint8_t * key, u
 	uint8_t dataOut[1024];
 	int inLen, outLen;
 	while (true) {
-		inLen = fread(dataIn, 256, 1, in);
+		inLen = fread(dataIn, 1, 256, in);
 		EVP_DecryptUpdate(ctx, dataOut, &outLen, dataIn, inLen);
-		fwrite(dataOut, outLen, 1, out);
+		fwrite(dataOut, 1, outLen, out);
 		EVP_DigestUpdate(evpCtx, dataOut, outLen);
 		if (inLen < 256) {
 			break;
@@ -297,6 +301,7 @@ long decfile(const char * inFilePath, const char * outFilePath, uint8_t * key, u
 	}
 	EVP_DecryptFinal_ex(ctx, dataOut, &outLen);
 	fwrite(dataOut, outLen, 1, out);
+	EVP_DigestUpdate(evpCtx, dataOut, outLen);
 	fclose(in);
 	fclose(out);
 	unsigned rlen;
